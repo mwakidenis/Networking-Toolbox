@@ -1,0 +1,2039 @@
+openapi: 3.0.0
+info:
+  title: Networking Toolbox API
+  description: |
+    **Comprehensive networking toolbox API** providing advanced IP address, subnet, CIDR, DNS, and DNSSEC utilities.
+
+    ## Features
+    - **IPv4/IPv6 Subnet Calculations** - Complete subnet analysis and VLSM
+    - **CIDR Operations** - Split, merge, compare, and manipulate CIDR blocks
+    - **IP Address Tools** - Validation, conversion, distance calculation, enumeration
+    - **DNS Utilities** - Record validation, PTR generation, reverse zones
+    - **DNSSEC Tools** - Key management, signature validation, DS record generation
+    - **Advanced Networking** - Wildcard masks, EUI-64, ULA generation
+
+    ## Categories
+    - **Subnetting** (5 endpoints) - IPv4/IPv6 subnet calculations and VLSM
+    - **CIDR** (10 endpoints) - CIDR manipulation and analysis
+    - **IP Address Convertor** (8 endpoints) - IP validation and format conversion
+    - **DNS** (36 endpoints) - Comprehensive DNS and DNSSEC tooling
+
+    ## Quick Start
+    All endpoints accept JSON payloads via POST requests and return structured JSON responses with comprehensive error handling.
+  version: 1.0.0
+  contact:
+    name: Networking Toolbox Support
+    url: https://github.com/Lissy93/networking-toolbox
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:5173
+    description: Local development server
+  - url: https://networking-toolbox.as93.net
+    description: Production server
+
+tags:
+  - name: Overview
+    description: API overview and information
+  - name: Subnetting
+    description: Subnet calculation tools for IPv4 and IPv6
+  - name: CIDR
+    description: CIDR notation conversion and manipulation tools
+  - name: IP Address Convertor
+    description: IP address validation and conversion tools
+  - name: DNS
+    description: DNS record validation and zone management tools
+
+paths:
+  # ============= OVERVIEW =============
+  /api:
+    get:
+      tags: [Overview]
+      summary: Get API Overview
+      description: Returns comprehensive information about all available API endpoints, categories, and usage examples
+      operationId: getApiOverview
+      responses:
+        '200':
+          description: API overview retrieved successfully
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiOverview' }
+
+  # ============= SUBNETTING =============
+  /api/subnetting/ipv4-subnet-calculator:
+    post:
+      tags: [Subnetting]
+      summary: Calculate IPv4 Subnet
+      description: Calculate comprehensive IPv4 subnet information including network, broadcast, hosts, and class
+      operationId: calculateIPv4Subnet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cidr]
+              properties:
+                cidr: { type: string, pattern: '^(?:[0-9]{1,3}\.){3}[0-9]{1,3}/[0-9]{1,2}$', example: '192.168.1.0/24' }
+      responses:
+        '200':
+          description: Subnet calculation successful
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SubnetResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /api/subnetting/ipv6-subnet-calculator:
+    post:
+      tags: [Subnetting]
+      summary: Calculate IPv6 Subnet
+      description: Calculate comprehensive IPv6 subnet information and address allocation
+      operationId: calculateIPv6Subnet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cidr]
+              properties:
+                cidr: { type: string, example: '2001:db8::/32' }
+      responses:
+        '200':
+          description: IPv6 subnet calculation successful
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IPv6SubnetResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/subnetting/vlsm-calculator:
+    post:
+      tags: [Subnetting]
+      summary: VLSM Calculator
+      description: Variable Length Subnet Masking calculator for efficient IP allocation
+      operationId: calculateVLSM
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [network, requirements]
+              properties:
+                network: { type: string, example: '192.168.0.0/24' }
+                requirements: { type: array, items: { type: integer }, example: [100, 50, 25] }
+      responses:
+        '200':
+          description: VLSM calculation successful
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VLSMResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/subnetting/supernet-calculator:
+    post:
+      tags: [Subnetting]
+      summary: Supernet Calculator
+      description: Calculate supernet (route summarization) for multiple networks
+      operationId: calculateSupernet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [networks]
+              properties:
+                networks: { type: array, items: { type: string }, example: ['192.168.1.0/24', '192.168.2.0/24'] }
+      responses:
+        '200':
+          description: Supernet calculation successful
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SupernetResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/subnetting/next-available:
+    post:
+      tags: [Subnetting]
+      summary: Find Next Available Subnet
+      description: Find next available subnet within a larger network
+      operationId: findNextAvailable
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [network, size]
+              properties:
+                network: { type: string, example: '10.0.0.0/8' }
+                size: { type: integer, example: 24 }
+                exclude: { type: array, items: { type: string }, example: ['10.0.1.0/24'] }
+      responses:
+        '200':
+          description: Next available subnet found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NextAvailableResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  # ============= CIDR =============
+  /api/cidr/cidr-to-subnet-mask:
+    post:
+      tags: [CIDR]
+      summary: CIDR to Subnet Mask
+      description: Convert CIDR notation to subnet mask format
+      operationId: cidrToSubnetMask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cidr]
+              properties:
+                cidr: { type: string, example: '192.168.1.0/24' }
+      responses:
+        '200':
+          description: Conversion successful
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MaskConversionResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/cidr/subnet-mask-to-cidr:
+    post:
+      tags: [CIDR]
+      summary: Subnet Mask to CIDR
+      description: Convert subnet mask to CIDR notation
+      operationId: subnetMaskToCidr
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mask]
+              properties:
+                mask: { type: string, example: '255.255.255.0' }
+      responses:
+        '200':
+          description: Conversion successful
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MaskConversionResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/cidr/split:
+    post:
+      tags: [CIDR]
+      summary: Split CIDR Block
+      description: Split a CIDR block into smaller subnets
+      operationId: splitCidr
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cidr]
+              properties:
+                cidr: { type: string, example: '192.168.0.0/22' }
+                count: { type: integer, example: 4 }
+                prefix: { type: integer, example: 24 }
+      responses:
+        '200':
+          description: CIDR split successful
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CidrSplitResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/cidr/deaggregate:
+    post:
+      tags: [CIDR]
+      summary: Deaggregate CIDR
+      description: Break down CIDR blocks into component subnets
+      operationId: deaggregateCidr
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cidr]
+              properties:
+                cidr: { type: string, example: '10.0.0.0/22' }
+                targetPrefix: { type: integer, example: 24 }
+      responses:
+        '200':
+          description: Deaggregation successful
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DeaggregateResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/cidr/compare:
+    post:
+      tags: [CIDR]
+      summary: Compare CIDR Blocks
+      description: Compare two CIDR blocks for overlap, containment, and adjacency
+      operationId: compareCidr
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cidr1, cidr2]
+              properties:
+                cidr1: { type: string, example: '192.168.1.0/24' }
+                cidr2: { type: string, example: '192.168.0.0/23' }
+      responses:
+        '200':
+          description: Comparison completed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CidrCompareResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/cidr/wildcard-mask:
+    post:
+      tags: [CIDR]
+      summary: Wildcard Mask Converter
+      description: Convert between subnet masks and wildcard masks
+      operationId: convertWildcardMask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mask: { type: string, example: '255.255.255.0' }
+                wildcard: { type: string, example: '0.0.0.255' }
+                cidr: { type: string, example: '192.168.1.0/24' }
+      responses:
+        '200':
+          description: Wildcard conversion successful
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WildcardMaskResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  # ============= IP ADDRESS CONVERTOR =============
+  /api/ip-address-convertor/validator:
+    post:
+      tags: [IP Address Convertor]
+      summary: IP Address Validator
+      description: Validate IPv4 and IPv6 addresses with detailed analysis
+      operationId: validateIpAddress
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ip]
+              properties:
+                ip: { type: string, example: '192.168.1.1' }
+                strict: { type: boolean, default: false }
+      responses:
+        '200':
+          description: Validation completed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IpValidationResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/ip-address-convertor/normalize:
+    post:
+      tags: [IP Address Convertor]
+      summary: Normalize IPv6 Addresses
+      description: Normalize and standardize IPv6 address formats
+      operationId: normalizeIpv6
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [addresses]
+              properties:
+                addresses: { type: array, items: { type: string }, example: ['2001:db8::1', '2001:0db8:0000:0000:0000:0000:0000:0001'] }
+      responses:
+        '200':
+          description: Normalization successful
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NormalizeResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/ip-address-convertor/nth-ip:
+    post:
+      tags: [IP Address Convertor]
+      summary: Calculate Nth IP
+      description: Calculate the nth IP address in a network range
+      operationId: calculateNthIp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [input]
+              properties:
+                input: { type: string, example: '192.168.1.0/24\n10' }
+      responses:
+        '200':
+          description: Nth IP calculated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NthIpResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/ip-address-convertor/regex-validator:
+    post:
+      tags: [IP Address Convertor]
+      summary: IP Regex Generator & Validator
+      description: Generate and validate regex patterns for IP addresses
+      operationId: generateIpRegex
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                regexType: { type: string, enum: [ipv4, ipv6, both], default: both }
+                mode: { type: string, enum: [standard, strict, loose], default: standard }
+                testInput: { type: string, example: '192.168.1.1' }
+      responses:
+        '200':
+          description: Regex generated/validated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RegexResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/ip-address-convertor/ipv4-to-ipv6:
+    post:
+      tags: [IP Address Convertor]
+      summary: IPv4 to IPv6 Converter
+      description: Convert IPv4 addresses to IPv6 format (IPv4-mapped IPv6)
+      operationId: ipv4ToIpv6
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ipv4]
+              properties:
+                ipv4: { type: string, example: '192.168.1.1' }
+      responses:
+        '200':
+          description: Conversion successful
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IpConversionResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/ip-address-convertor/ipv6-to-ipv4:
+    post:
+      tags: [IP Address Convertor]
+      summary: IPv6 to IPv4 Converter
+      description: Extract IPv4 from IPv4-mapped IPv6 addresses
+      operationId: ipv6ToIpv4
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ipv6]
+              properties:
+                ipv6: { type: string, example: '::ffff:192.168.1.1' }
+      responses:
+        '200':
+          description: Conversion successful
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IpConversionResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/ip-address-convertor/ipv6-compress:
+    post:
+      tags: [IP Address Convertor]
+      summary: Compress IPv6 Address
+      description: Compress IPv6 addresses to shortest form
+      operationId: compressIpv6
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ipv6]
+              properties:
+                ipv6: { type: string, example: '2001:0db8:0000:0000:0000:0000:0000:0001' }
+      responses:
+        '200':
+          description: Compression successful
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IPv6FormatResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/ip-address-convertor/ipv6-expand:
+    post:
+      tags: [IP Address Convertor]
+      summary: Expand IPv6 Address
+      description: Expand IPv6 addresses to full form
+      operationId: expandIpv6
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ipv6]
+              properties:
+                ipv6: { type: string, example: '2001:db8::1' }
+      responses:
+        '200':
+          description: Expansion successful
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IPv6FormatResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/ip-address-convertor/ula-generator:
+    post:
+      tags: [IP Address Convertor]
+      summary: ULA Generator
+      description: Generate Unique Local Address (ULA) IPv6 prefixes
+      operationId: generateUla
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                count: { type: integer, default: 1, minimum: 1, maximum: 100 }
+      responses:
+        '200':
+          description: ULA addresses generated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UlaResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/ip-address-convertor/zone-id:
+    post:
+      tags: [IP Address Convertor]
+      summary: IPv6 Zone ID Processor
+      description: Process IPv6 addresses with zone identifiers
+      operationId: processZoneId
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ipv6]
+              properties:
+                ipv6: { type: string, example: 'fe80::1%eth0' }
+      responses:
+        '200':
+          description: Zone ID processed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ZoneIdResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  # ============= DNS - Record Validation =============
+  /api/dns/validate-a-record:
+    post:
+      tags: [DNS]
+      summary: Validate A Record
+      description: Validate DNS A record format and content
+      operationId: validateARecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [record]
+              properties:
+                record: { type: string, example: 'example.com. 3600 IN A 192.168.1.1' }
+      responses:
+        '200':
+          description: A record validation completed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DnsRecordValidation' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/validate-aaaa-record:
+    post:
+      tags: [DNS]
+      summary: Validate AAAA Record
+      description: Validate DNS AAAA record format and IPv6 address
+      operationId: validateAAAARecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [record]
+              properties:
+                record: { type: string, example: 'example.com. 3600 IN AAAA 2001:db8::1' }
+      responses:
+        '200':
+          description: AAAA record validation completed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DnsRecordValidation' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/validate-cname-record:
+    post:
+      tags: [DNS]
+      summary: Validate CNAME Record
+      description: Validate DNS CNAME record format and target
+      operationId: validateCnameRecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [record]
+              properties:
+                record: { type: string, example: 'www.example.com. 3600 IN CNAME example.com.' }
+      responses:
+        '200':
+          description: CNAME record validation completed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DnsRecordValidation' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/validate-mx-record:
+    post:
+      tags: [DNS]
+      summary: Validate MX Record
+      description: Validate DNS MX record format, priority, and mail server
+      operationId: validateMxRecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [record]
+              properties:
+                record: { type: string, example: 'example.com. 3600 IN MX 10 mail.example.com.' }
+      responses:
+        '200':
+          description: MX record validation completed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DnsRecordValidation' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/validate-txt-record:
+    post:
+      tags: [DNS]
+      summary: Validate TXT Record
+      description: Validate DNS TXT record format and content
+      operationId: validateTxtRecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [record]
+              properties:
+                record: { type: string, example: 'example.com. 3600 IN TXT "v=spf1 include:_spf.google.com ~all"' }
+      responses:
+        '200':
+          description: TXT record validation completed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DnsRecordValidation' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/validate-srv-record:
+    post:
+      tags: [DNS]
+      summary: Validate SRV Record
+      description: Validate DNS SRV record format, priority, weight, and port
+      operationId: validateSrvRecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [record]
+              properties:
+                record: { type: string, example: '_sip._tcp.example.com. 3600 IN SRV 10 5 5060 sip.example.com.' }
+      responses:
+        '200':
+          description: SRV record validation completed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DnsRecordValidation' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/validate-caa-record:
+    post:
+      tags: [DNS]
+      summary: Validate CAA Record
+      description: Validate DNS CAA record for certificate authority authorization
+      operationId: validateCaaRecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [record]
+              properties:
+                record: { type: string, example: 'example.com. 3600 IN CAA 0 issue "letsencrypt.org"' }
+      responses:
+        '200':
+          description: CAA record validation completed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DnsRecordValidation' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  # ============= DNS - DNSSEC =============
+  /api/dns/parse-dnskey:
+    post:
+      tags: [DNS]
+      summary: Parse DNSKEY Record
+      description: Parse and analyze DNSSEC DNSKEY records
+      operationId: parseDnskey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [dnskey]
+              properties:
+                dnskey: { type: string, example: 'example.com. 3600 IN DNSKEY 256 3 8 AwEAAa...' }
+      responses:
+        '200':
+          description: DNSKEY parsed successfully
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DnskeyParseResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/calculate-key-tag:
+    post:
+      tags: [DNS]
+      summary: Calculate Key Tag
+      description: Calculate DNSSEC key tag from DNSKEY record
+      operationId: calculateKeyTag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [dnskey]
+              properties:
+                dnskey: { type: string, example: 'AwEAAa...' }
+                algorithm: { type: integer, example: 8 }
+      responses:
+        '200':
+          description: Key tag calculated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/KeyTagResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/generate-ds-record:
+    post:
+      tags: [DNS]
+      summary: Generate DS Record
+      description: Generate DS record from DNSKEY for DNSSEC delegation
+      operationId: generateDsRecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [dnskey, domain]
+              properties:
+                dnskey: { type: string, example: 'AwEAAa...' }
+                domain: { type: string, example: 'example.com' }
+                digestType: { type: integer, enum: [1, 2, 4], default: 2 }
+      responses:
+        '200':
+          description: DS record generated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DsRecordResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/calculate-nsec3-hash:
+    post:
+      tags: [DNS]
+      summary: Calculate NSEC3 Hash
+      description: Calculate NSEC3 hash for DNS name and zone
+      operationId: calculateNsec3Hash
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, zone]
+              properties:
+                name: { type: string, example: 'example.com' }
+                zone: { type: string, example: 'com' }
+                salt: { type: string, example: 'aabbccdd' }
+                iterations: { type: integer, default: 1 }
+      responses:
+        '200':
+          description: NSEC3 hash calculated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Nsec3HashResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/suggest-rrsig-windows:
+    post:
+      tags: [DNS]
+      summary: Suggest RRSIG Windows
+      description: Suggest optimal RRSIG signing windows for DNSSEC
+      operationId: suggestRrsigWindows
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ttl: { type: integer, default: 86400 }
+                signatureValidityDays: { type: integer, default: 30 }
+                renewalLeadTime: { type: integer, default: 24 }
+                desiredOverlap: { type: integer, default: 24 }
+                clockSkew: { type: integer, default: 1 }
+      responses:
+        '200':
+          description: RRSIG windows calculated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RrsigWindowsResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  # ============= DNS - PTR & Reverse =============
+  /api/dns/ptr-generator:
+    post:
+      tags: [DNS]
+      summary: Generate PTR Records
+      description: Generate PTR records for reverse DNS lookup
+      operationId: generatePtrRecords
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [input]
+              properties:
+                input: { type: string, example: '192.168.1.0/24' }
+                domain: { type: string, example: 'example.com' }
+                template: { type: string, example: 'host-{ip}.example.com' }
+      responses:
+        '200':
+          description: PTR records generated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PtrGeneratorResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/reverse-zones:
+    post:
+      tags: [DNS]
+      summary: Calculate Reverse Zones
+      description: Calculate reverse DNS zones for IP ranges
+      operationId: calculateReverseZones
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cidr]
+              properties:
+                cidr: { type: string, example: '192.168.0.0/16' }
+      responses:
+        '200':
+          description: Reverse zones calculated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReverseZonesResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/generate-reverse-zone:
+    post:
+      tags: [DNS]
+      summary: Generate Reverse Zone File
+      description: Generate complete reverse DNS zone file
+      operationId: generateReverseZone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cidr]
+              properties:
+                cidr: { type: string, example: '192.168.1.0/24' }
+                nameservers: { type: array, items: { type: string }, example: ['ns1.example.com.', 'ns2.example.com.'] }
+                template: { type: string, example: 'host-{ip}.example.com.' }
+                ttl: { type: integer, default: 3600 }
+      responses:
+        '200':
+          description: Reverse zone file generated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReverseZoneFileResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/analyze-ptr-coverage:
+    post:
+      tags: [DNS]
+      summary: Analyze PTR Coverage
+      description: Analyze PTR record coverage for IP ranges
+      operationId: analyzePtrCoverage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [range]
+              properties:
+                range: { type: string, example: '192.168.1.0/24' }
+                existing: { type: array, items: { type: string }, example: ['192.168.1.1', '192.168.1.10'] }
+      responses:
+        '200':
+          description: PTR coverage analyzed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PtrCoverageResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  # ============= DNS - Utilities =============
+  /api/dns/validate-domain:
+    post:
+      tags: [DNS]
+      summary: Validate Domain Name
+      description: Validate domain name format and structure
+      operationId: validateDomain
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [domain]
+              properties:
+                domain: { type: string, example: 'example.com' }
+                strict: { type: boolean, default: false }
+      responses:
+        '200':
+          description: Domain validation completed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DomainValidationResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/validate-email:
+    post:
+      tags: [DNS]
+      summary: Validate Email Address
+      description: Validate email address format for DNS records
+      operationId: validateEmail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, example: 'admin@example.com' }
+      responses:
+        '200':
+          description: Email validation completed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EmailValidationResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/validate-ttl:
+    post:
+      tags: [DNS]
+      summary: Validate TTL Value
+      description: Validate DNS TTL value and suggest optimizations
+      operationId: validateTtl
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ttl]
+              properties:
+                ttl: { type: integer, example: 3600 }
+                recordType: { type: string, example: 'A' }
+      responses:
+        '200':
+          description: TTL validation completed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TtlValidationResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/humanize-ttl:
+    post:
+      tags: [DNS]
+      summary: Humanize TTL
+      description: Convert TTL seconds to human-readable format
+      operationId: humanizeTtl
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ttl]
+              properties:
+                ttl: { type: integer, example: 86400 }
+      responses:
+        '200':
+          description: TTL humanized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HumanTtlResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  # ============= DNS - Additional Utilities =============
+  /api/dns/calculate-cache-expiry:
+    post:
+      tags: [DNS]
+      summary: Calculate Cache Expiry
+      description: Calculate DNS cache expiry times based on TTL and timestamps
+      operationId: calculateCacheExpiry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ttl]
+              properties:
+                ttl: { type: integer, example: 3600 }
+                queryTime: { type: string, format: date-time, example: '2024-01-01T12:00:00Z' }
+      responses:
+        '200':
+          description: Cache expiry calculated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CacheExpiryResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/calculate-ttl-expiry:
+    post:
+      tags: [DNS]
+      summary: Calculate TTL Expiry
+      description: Calculate when DNS records expire based on TTL
+      operationId: calculateTtlExpiry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ttl]
+              properties:
+                ttl: { type: integer, example: 3600 }
+                recordTime: { type: string, format: date-time }
+      responses:
+        '200':
+          description: TTL expiry calculated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TtlExpiryResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/estimate-edns-size:
+    post:
+      tags: [DNS]
+      summary: Estimate EDNS Size
+      description: Estimate EDNS packet size for DNS queries
+      operationId: estimateEdnsSize
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query: { type: string, example: 'example.com' }
+                recordType: { type: string, example: 'A' }
+      responses:
+        '200':
+          description: EDNS size estimated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EdnsSizeResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/normalize-label:
+    post:
+      tags: [DNS]
+      summary: Normalize DNS Label
+      description: Normalize DNS labels according to RFC standards
+      operationId: normalizeLabel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [label]
+              properties:
+                label: { type: string, example: 'Example.COM' }
+      responses:
+        '200':
+          description: DNS label normalized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NormalizeLabelResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/check-domain-valid:
+    post:
+      tags: [DNS]
+      summary: Check Domain Valid
+      description: Advanced domain validation with detailed analysis
+      operationId: checkDomainValid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [domain]
+              properties:
+                domain: { type: string, example: 'example.com' }
+                checkDNS: { type: boolean, default: false }
+      responses:
+        '200':
+          description: Domain validation completed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DomainCheckResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/validate-dns-lookup:
+    post:
+      tags: [DNS]
+      summary: Validate DNS Lookup
+      description: Validate DNS lookup requests and responses
+      operationId: validateDnsLookup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query: { type: string, example: 'example.com' }
+                recordType: { type: string, example: 'A' }
+      responses:
+        '200':
+          description: DNS lookup validated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DnsLookupResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/validate-reverse-lookup:
+    post:
+      tags: [DNS]
+      summary: Validate Reverse Lookup
+      description: Validate reverse DNS lookup requests
+      operationId: validateReverseLookup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ip]
+              properties:
+                ip: { type: string, example: '192.168.1.1' }
+      responses:
+        '200':
+          description: Reverse lookup validated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReverseLookupResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/validate-dns-record:
+    post:
+      tags: [DNS]
+      summary: Validate DNS Record
+      description: Generic DNS record validation for any record type
+      operationId: validateDnsRecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [record]
+              properties:
+                record: { type: string, example: 'example.com. 3600 IN A 192.168.1.1' }
+                recordType: { type: string, example: 'A' }
+      responses:
+        '200':
+          description: DNS record validated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DnsRecordValidation' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/validate-ip-dns:
+    post:
+      tags: [DNS]
+      summary: Validate IP for DNS
+      description: Validate IP addresses for DNS record usage
+      operationId: validateIpDns
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ip]
+              properties:
+                ip: { type: string, example: '192.168.1.1' }
+                recordType: { type: string, example: 'A' }
+      responses:
+        '200':
+          description: IP validation for DNS completed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IpDnsValidationResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/validate-cidr-dns:
+    post:
+      tags: [DNS]
+      summary: Validate CIDR for DNS
+      description: Validate CIDR blocks for DNS zone usage
+      operationId: validateCidrDns
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cidr]
+              properties:
+                cidr: { type: string, example: '192.168.1.0/24' }
+      responses:
+        '200':
+          description: CIDR validation for DNS completed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CidrDnsValidationResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  # ============= DNS - DNSSEC Advanced =============
+  /api/dns/validate-dnskey:
+    post:
+      tags: [DNS]
+      summary: Validate DNSKEY
+      description: Validate DNSKEY record format and cryptographic properties
+      operationId: validateDnskey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [dnskey]
+              properties:
+                dnskey: { type: string, example: 'example.com. 3600 IN DNSKEY 256 3 8 AwEAAa...' }
+      responses:
+        '200':
+          description: DNSKEY validation completed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DnskeyValidationResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/validate-cds-cdnskey:
+    post:
+      tags: [DNS]
+      summary: Validate CDS/CDNSKEY
+      description: Validate CDS and CDNSKEY records for automated DNSSEC
+      operationId: validateCdsCdnskey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cds: { type: string, example: 'example.com. 3600 IN CDS 12345 8 2 ABC123...' }
+                cdnskey: { type: string, example: 'example.com. 3600 IN CDNSKEY 256 3 8 AwEAAa...' }
+      responses:
+        '200':
+          description: CDS/CDNSKEY validation completed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CdsCdnskeyValidationResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/validate-rrsig-timing:
+    post:
+      tags: [DNS]
+      summary: Validate RRSIG Timing
+      description: Validate RRSIG signature timing and validity periods
+      operationId: validateRrsigTiming
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [inception, expiration]
+              properties:
+                inception: { type: string, format: date-time }
+                expiration: { type: string, format: date-time }
+                currentTime: { type: string, format: date-time }
+      responses:
+        '200':
+          description: RRSIG timing validated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RrsigTimingResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/format-ds-record:
+    post:
+      tags: [DNS]
+      summary: Format DS Record
+      description: Format DS record for zone file inclusion
+      operationId: formatDsRecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [keyTag, algorithm, digestType, digest]
+              properties:
+                domain: { type: string, example: 'example.com' }
+                keyTag: { type: integer, example: 12345 }
+                algorithm: { type: integer, example: 8 }
+                digestType: { type: integer, example: 2 }
+                digest: { type: string, example: 'ABC123...' }
+                ttl: { type: integer, default: 3600 }
+      responses:
+        '200':
+          description: DS record formatted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FormattedDsResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/format-cds-record:
+    post:
+      tags: [DNS]
+      summary: Format CDS Record
+      description: Format CDS record for automated DNSSEC
+      operationId: formatCdsRecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [keyTag, algorithm, digestType, digest]
+              properties:
+                domain: { type: string, example: 'example.com' }
+                keyTag: { type: integer, example: 12345 }
+                algorithm: { type: integer, example: 8 }
+                digestType: { type: integer, example: 2 }
+                digest: { type: string, example: 'ABC123...' }
+                ttl: { type: integer, default: 3600 }
+      responses:
+        '200':
+          description: CDS record formatted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FormattedCdsResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/format-cdnskey-record:
+    post:
+      tags: [DNS]
+      summary: Format CDNSKEY Record
+      description: Format CDNSKEY record for automated DNSSEC
+      operationId: formatCdnskeyRecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [flags, protocol, algorithm, publicKey]
+              properties:
+                domain: { type: string, example: 'example.com' }
+                flags: { type: integer, example: 256 }
+                protocol: { type: integer, example: 3 }
+                algorithm: { type: integer, example: 8 }
+                publicKey: { type: string, example: 'AwEAAa...' }
+                ttl: { type: integer, default: 3600 }
+      responses:
+        '200':
+          description: CDNSKEY record formatted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FormattedCdnskeyResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/format-rrsig-dates:
+    post:
+      tags: [DNS]
+      summary: Format RRSIG Dates
+      description: Format RRSIG inception and expiration dates
+      operationId: formatRrsigDates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [inception, expiration]
+              properties:
+                inception: { type: string, format: date-time }
+                expiration: { type: string, format: date-time }
+                format: { type: string, enum: [rfc3339, unix, dnssec], default: dnssec }
+      responses:
+        '200':
+          description: RRSIG dates formatted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RrsigDatesResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/generate-cds-records:
+    post:
+      tags: [DNS]
+      summary: Generate CDS Records
+      description: Generate CDS records from DNSKEY for automated DNSSEC
+      operationId: generateCdsRecords
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [dnskey, domain]
+              properties:
+                dnskey: { type: string, example: 'AwEAAa...' }
+                domain: { type: string, example: 'example.com' }
+                digestTypes: { type: array, items: { type: integer }, example: [1, 2, 4] }
+      responses:
+        '200':
+          description: CDS records generated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CdsRecordsResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/generate-cdnskey-record:
+    post:
+      tags: [DNS]
+      summary: Generate CDNSKEY Record
+      description: Generate CDNSKEY record from DNSKEY for automated DNSSEC
+      operationId: generateCdnskeyRecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [dnskey, domain]
+              properties:
+                dnskey: { type: string, example: 'AwEAAa...' }
+                domain: { type: string, example: 'example.com' }
+      responses:
+        '200':
+          description: CDNSKEY record generated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CdnskeyRecordResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/generate-ptr-name:
+    post:
+      tags: [DNS]
+      summary: Generate PTR Name
+      description: Generate PTR record name from IP address
+      operationId: generatePtrName
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ip]
+              properties:
+                ip: { type: string, example: '192.168.1.1' }
+      responses:
+        '200':
+          description: PTR name generated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PtrNameResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/generate-cidr-ptrs:
+    post:
+      tags: [DNS]
+      summary: Generate CIDR PTRs
+      description: Generate PTR records for entire CIDR block
+      operationId: generateCidrPtrs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cidr]
+              properties:
+                cidr: { type: string, example: '192.168.1.0/24' }
+                domain: { type: string, example: 'example.com' }
+                template: { type: string, example: 'host-{ip}' }
+      responses:
+        '200':
+          description: CIDR PTR records generated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CidrPtrsResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/dns/format-dns-error:
+    post:
+      tags: [DNS]
+      summary: Format DNS Error
+      description: Format DNS error messages for user display
+      operationId: formatDnsError
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [error]
+              properties:
+                error: { type: string, example: 'NXDOMAIN' }
+                context: { type: string, example: 'example.com A query' }
+      responses:
+        '200':
+          description: DNS error formatted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DnsErrorResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+components:
+  schemas:
+    # ============= Basic Types =============
+    ApiOverview:
+      type: object
+      properties:
+        message: { type: string, example: 'Networking Toolbox API' }
+        version: { type: string, example: '1.0.0' }
+        categories: { type: array, items: { type: string } }
+        endpoints: { type: object }
+        totalEndpoints: { type: integer, example: 59 }
+
+    ErrorResponse:
+      type: object
+      properties:
+        error: { type: string }
+        details: { type: string }
+        timestamp: { type: string, format: date-time }
+
+    # ============= Subnetting Results =============
+    SubnetResult:
+      type: object
+      properties:
+        network: { type: string, example: '192.168.1.0' }
+        broadcast: { type: string, example: '192.168.1.255' }
+        mask: { type: string, example: '255.255.255.0' }
+        wildcard: { type: string, example: '0.0.0.255' }
+        totalHosts: { type: integer, example: 256 }
+        usableHosts: { type: integer, example: 254 }
+        firstUsable: { type: string, example: '192.168.1.1' }
+        lastUsable: { type: string, example: '192.168.1.254' }
+        networkClass: { type: string, example: 'C' }
+
+    IPv6SubnetResult:
+      type: object
+      properties:
+        network: { type: string }
+        prefix: { type: integer }
+        totalAddresses: { type: string }
+        networkType: { type: string }
+
+    VLSMResult:
+      type: object
+      properties:
+        subnets: { type: array, items: { $ref: '#/components/schemas/SubnetResult' } }
+        efficiency: { type: number, format: float }
+        wastedAddresses: { type: integer }
+
+    SupernetResult:
+      type: object
+      properties:
+        supernet: { type: string }
+        efficiency: { type: number, format: float }
+        summary: { type: object }
+
+    NextAvailableResult:
+      type: object
+      properties:
+        nextSubnet: { type: string }
+        available: { type: boolean }
+        alternatives: { type: array, items: { type: string } }
+
+    # ============= CIDR Results =============
+    MaskConversionResult:
+      type: object
+      properties:
+        cidr: { type: string }
+        mask: { type: string }
+        prefix: { type: integer }
+        valid: { type: boolean }
+
+    CidrSplitResult:
+      type: object
+      properties:
+        subnets: { type: array, items: { type: string } }
+        count: { type: integer }
+        efficiency: { type: number, format: float }
+
+    DeaggregateResult:
+      type: object
+      properties:
+        subnets: { type: array, items: { type: string } }
+        totalSubnets: { type: integer }
+
+    CidrCompareResult:
+      type: object
+      properties:
+        relationship: { type: string, enum: [contains, contained, overlaps, adjacent, separate] }
+        details: { type: object }
+
+    WildcardMaskResult:
+      type: object
+      properties:
+        subnetMask: { type: string }
+        wildcardMask: { type: string }
+        cidr: { type: string }
+
+    # ============= IP Convertor Results =============
+    IpValidationResult:
+      type: object
+      properties:
+        valid: { type: boolean }
+        version: { type: integer }
+        type: { type: string }
+        details: { type: object }
+
+    NormalizeResult:
+      type: object
+      properties:
+        normalized: { type: array, items: { type: string } }
+        results: { type: array, items: { type: object } }
+
+    NthIpResult:
+      type: object
+      properties:
+        calculations: { type: array, items: { type: object } }
+        summary: { type: object }
+        errors: { type: array, items: { type: string } }
+
+    RegexResult:
+      type: object
+      properties:
+        regex: { type: string }
+        flags: { type: string }
+        explanation: { type: string }
+        testResult: { type: boolean }
+
+    IpConversionResult:
+      type: object
+      properties:
+        input: { type: string }
+        output: { type: string }
+        inputVersion: { type: integer }
+        outputVersion: { type: integer }
+
+    IPv6FormatResult:
+      type: object
+      properties:
+        input: { type: string }
+        compressed: { type: string }
+        expanded: { type: string }
+        valid: { type: boolean }
+
+    UlaResult:
+      type: object
+      properties:
+        addresses: { type: array, items: { type: string } }
+        prefix: { type: string }
+        globalId: { type: string }
+
+    ZoneIdResult:
+      type: object
+      properties:
+        address: { type: string }
+        zoneId: { type: string }
+        scope: { type: string }
+        valid: { type: boolean }
+
+    # ============= DNS Results =============
+    DnsRecordValidation:
+      type: object
+      properties:
+        valid: { type: boolean }
+        recordType: { type: string }
+        parsed: { type: object }
+        issues: { type: array, items: { type: string } }
+
+    DnskeyParseResult:
+      type: object
+      properties:
+        flags: { type: integer }
+        protocol: { type: integer }
+        algorithm: { type: integer }
+        keyTag: { type: integer }
+        publicKey: { type: string }
+        keyType: { type: string }
+
+    KeyTagResult:
+      type: object
+      properties:
+        keyTag: { type: integer }
+        algorithm: { type: integer }
+
+    DsRecordResult:
+      type: object
+      properties:
+        keyTag: { type: integer }
+        algorithm: { type: integer }
+        digestType: { type: integer }
+        digest: { type: string }
+        dsRecord: { type: string }
+
+    Nsec3HashResult:
+      type: object
+      properties:
+        hash: { type: string }
+        name: { type: string }
+        zone: { type: string }
+        iterations: { type: integer }
+
+    RrsigWindowsResult:
+      type: object
+      properties:
+        windows: { type: array, items: { type: object } }
+        recommendations: { type: object }
+
+    PtrGeneratorResult:
+      type: object
+      properties:
+        records: { type: array, items: { type: object } }
+        count: { type: integer }
+        zoneFiles: { type: object }
+
+    ReverseZonesResult:
+      type: object
+      properties:
+        zones: { type: array, items: { type: string } }
+        type: { type: string }
+        details: { type: object }
+
+    ReverseZoneFileResult:
+      type: object
+      properties:
+        zoneFile: { type: string }
+        records: { type: integer }
+        zones: { type: array, items: { type: string } }
+
+    PtrCoverageResult:
+      type: object
+      properties:
+        coverage: { type: number, format: float }
+        missing: { type: array, items: { type: string } }
+        existing: { type: array, items: { type: string } }
+        statistics: { type: object }
+
+    DomainValidationResult:
+      type: object
+      properties:
+        valid: { type: boolean }
+        domain: { type: string }
+        labels: { type: array, items: { type: string } }
+        issues: { type: array, items: { type: string } }
+
+    EmailValidationResult:
+      type: object
+      properties:
+        valid: { type: boolean }
+        email: { type: string }
+        local: { type: string }
+        domain: { type: string }
+
+    TtlValidationResult:
+      type: object
+      properties:
+        valid: { type: boolean }
+        ttl: { type: integer }
+        humanReadable: { type: string }
+        recommendations: { type: object }
+
+    HumanTtlResult:
+      type: object
+      properties:
+        ttl: { type: integer }
+        human: { type: string }
+        breakdown: { type: object }
+
+    # ============= Additional DNS Results =============
+    CacheExpiryResult:
+      type: object
+      properties:
+        expiryTime: { type: string, format: date-time }
+        remainingTtl: { type: integer }
+        cachePercentage: { type: number, format: float }
+
+    TtlExpiryResult:
+      type: object
+      properties:
+        expiryTime: { type: string, format: date-time }
+        remainingTime: { type: integer }
+        expired: { type: boolean }
+
+    EdnsSizeResult:
+      type: object
+      properties:
+        estimatedSize: { type: integer }
+        udpLimit: { type: integer }
+        tcpRequired: { type: boolean }
+
+    NormalizeLabelResult:
+      type: object
+      properties:
+        original: { type: string }
+        normalized: { type: string }
+        valid: { type: boolean }
+
+    DomainCheckResult:
+      type: object
+      properties:
+        valid: { type: boolean }
+        domain: { type: string }
+        analysis: { type: object }
+        dnsResolvable: { type: boolean }
+
+    DnsLookupResult:
+      type: object
+      properties:
+        query: { type: string }
+        recordType: { type: string }
+        valid: { type: boolean }
+        records: { type: array, items: { type: object } }
+
+    ReverseLookupResult:
+      type: object
+      properties:
+        ip: { type: string }
+        ptrName: { type: string }
+        valid: { type: boolean }
+        zone: { type: string }
+
+    IpDnsValidationResult:
+      type: object
+      properties:
+        ip: { type: string }
+        valid: { type: boolean }
+        recordType: { type: string }
+        issues: { type: array, items: { type: string } }
+
+    CidrDnsValidationResult:
+      type: object
+      properties:
+        cidr: { type: string }
+        valid: { type: boolean }
+        zones: { type: array, items: { type: string } }
+
+    DnskeyValidationResult:
+      type: object
+      properties:
+        valid: { type: boolean }
+        keyTag: { type: integer }
+        algorithm: { type: integer }
+        issues: { type: array, items: { type: string } }
+
+    CdsCdnskeyValidationResult:
+      type: object
+      properties:
+        cdsValid: { type: boolean }
+        cdnskeyValid: { type: boolean }
+        matching: { type: boolean }
+        issues: { type: array, items: { type: string } }
+
+    RrsigTimingResult:
+      type: object
+      properties:
+        valid: { type: boolean }
+        currentlyValid: { type: boolean }
+        timeToExpiry: { type: integer }
+        issues: { type: array, items: { type: string } }
+
+    FormattedDsResult:
+      type: object
+      properties:
+        dsRecord: { type: string }
+        keyTag: { type: integer }
+        algorithm: { type: integer }
+        digestType: { type: integer }
+
+    FormattedCdsResult:
+      type: object
+      properties:
+        cdsRecord: { type: string }
+        keyTag: { type: integer }
+        algorithm: { type: integer }
+        digestType: { type: integer }
+
+    FormattedCdnskeyResult:
+      type: object
+      properties:
+        cdnskeyRecord: { type: string }
+        keyTag: { type: integer }
+        flags: { type: integer }
+        algorithm: { type: integer }
+
+    RrsigDatesResult:
+      type: object
+      properties:
+        inception: { type: string }
+        expiration: { type: string }
+        format: { type: string }
+        validity: { type: object }
+
+    CdsRecordsResult:
+      type: object
+      properties:
+        records: { type: array, items: { type: string } }
+        keyTag: { type: integer }
+        digestTypes: { type: array, items: { type: integer } }
+
+    CdnskeyRecordResult:
+      type: object
+      properties:
+        record: { type: string }
+        keyTag: { type: integer }
+        flags: { type: integer }
+
+    PtrNameResult:
+      type: object
+      properties:
+        ip: { type: string }
+        ptrName: { type: string }
+        zone: { type: string }
+
+    CidrPtrsResult:
+      type: object
+      properties:
+        records: { type: array, items: { type: object } }
+        totalRecords: { type: integer }
+        zones: { type: array, items: { type: string } }
+
+    DnsErrorResult:
+      type: object
+      properties:
+        error: { type: string }
+        formattedMessage: { type: string }
+        severity: { type: string }
+        suggestions: { type: array, items: { type: string } }
+
+  responses:
+    ValidationError:
+      description: Validation error - invalid input parameters
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+          example:
+            error: 'Validation Error'
+            details: 'Invalid CIDR format. Expected format: x.x.x.x/prefix'
+            timestamp: '2024-01-01T12:00:00Z'
+
+    ServerError:
+      description:  Internal server error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+          example:
+            error: 'Internal Server Error'
+            details: 'An unexpected error occurred while processing the request'
+            timestamp: '2024-01-01T12:00:00Z'
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+security:
+  - ApiKeyAuth: []
+
+externalDocs:
+  description:  Find more info on GitHub
+  url: https://github.com/Lissy93/networking-toolbox

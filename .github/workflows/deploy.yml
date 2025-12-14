@@ -1,0 +1,83 @@
+name: 🚀 Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: >-
+          Base URL path.
+          If deploying to GH Pages, this must match the repo name - e.g. `/networking-toolbox`.
+          For other environments, use `/` (or leave blank) to deploy to base of the domain.
+        required: false
+        default: '/networking-toolbox'
+        type: string
+      node_version:
+        description: 'Node.js version. >=22 (Jod LTS +) is recommended'
+        required: false
+        default: '22'
+        type: string
+      deploy_env:
+        description: >-
+            Deployment environment.
+            See the docs for choosing the right environment for your instance.
+        required: false
+        default: 'static'
+        type: choice
+        options:
+          - static
+          - vercel
+          - node
+          - docker
+          - netlify
+          - static
+          - auto
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build static site
+        env:
+          BASE_URL: ${{ inputs.base_url || '/'}}
+          DEPLOY_ENV: ${{ inputs.deploy_env }}
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./build
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

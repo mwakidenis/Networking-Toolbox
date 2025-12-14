@@ -1,0 +1,57 @@
+name: 🚀 Deployment Issue
+description: Issues with hosting, building, or deployment
+title: "[Deployment]: "
+labels: ["deployment", "needs-triage"]
+assignees: []
+
+body:
+  - type: dropdown
+    id: deployment-type
+    attributes:
+      label: Deployment Type
+      description: How are you trying to deploy?
+      options:
+        - Vercel
+        - Netlify
+        - GitHub Pages
+        - Docker
+        - Static hosting (Apache/Nginx)
+        - Self-hosted server
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-taken
+    attributes:
+      label: Steps Taken
+      description: What steps did you follow to deploy?
+      placeholder: |
+        1. Cloned the repository
+        2. Ran npm install
+        3. Ran npm run build
+        4. Deployed to platform...
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment-info
+    attributes:
+      label: Environment Info
+      description: Node.js version, npm version, OS, platform details
+      placeholder: |
+        Node.js: v18.17.0
+        npm: 9.6.7
+        OS: Ubuntu 22.04
+    validations:
+      required: true
+
+  - type: textarea
+    id: error-logs
+    attributes:
+      label: Error Logs
+      description: Paste error messages and build logs here
+      placeholder: Paste error messages and logs here...
+      render: shell
+    validations:
+      required: true

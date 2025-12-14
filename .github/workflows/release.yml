@@ -1,0 +1,116 @@
+name: 📦 Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build:static
+        continue-on-error: true
+
+      - name: Create archives
+        run: |
+          mkdir -p dist
+          tar -czf dist/networking-toolbox-${{ github.ref_name }}.tar.gz \
+            --exclude=node_modules \
+            --exclude=.git \
+            --exclude=.github \
+            --exclude=tests \
+            --exclude=playwright-report \
+            --exclude=coverage \
+            --exclude=dist \
+            .
+
+          zip -r dist/networking-toolbox-${{ github.ref_name }}.zip . \
+            -x "node_modules/*" \
+            -x ".git/*" \
+            -x ".github/*" \
+            -x "tests/*" \
+            -x "playwright-report/*" \
+            -x "coverage/*" \
+            -x "dist/*"
+
+      - name: Generate changelog
+        id: changelog
+        uses: requarks/changelog-action@v1
+        with:
+          token: ${{ github.token }}
+          tag: ${{ github.ref_name }}
+          writeToFile: false
+          includeInvalidCommits: true
+          excludeTypes: build,docs,style,chore
+
+      - name: Extract version
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.BOT_TOKEN }}
+          tag_name: ${{ github.ref_name }}
+          name: Networking Toolbox ${{ steps.version.outputs.version }}
+          body: |
+            ## 📦 Networking Toolbox ${{ steps.version.outputs.version }}
+
+            ${{ steps.changelog.outputs.changes }}
+
+            ---
+
+            ### 📥 Installation
+
+            **Docker:**
+            ```bash
+            docker pull lissy93/networking-toolbox:${{ steps.version.outputs.version }}
+            docker run -d -p 8080:3000 lissy93/networking-toolbox:${{ steps.version.outputs.version }}
+            ```
+
+            **From Source:**
+            ```bash
+            # Download and extract
+            tar -xzf networking-toolbox-${{ github.ref_name }}.tar.gz
+
+            # Install and run
+            npm install
+            npm run build
+            npm run preview
+            ```
+
+            **Deploy to Vercel:**
+            [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Lissy93/networking-toolbox)
+
+            ### 📋 What's Changed
+            ${{ steps.changelog.outputs.previousTag && format('**Full Changelog**: https://github.com/{0}/compare/{1}...{2}', github.repository, steps.changelog.outputs.previousTag, github.ref_name) || '' }}
+
+            ### 🔗 Links
+            - 📚 [Documentation](https://github.com/${{ github.repository }}/blob/main/README.md)
+            - 🐛 [Report Issues](https://github.com/${{ github.repository }}/issues)
+            - 🌐 [Live Demo](https://networking-toolbox.as93.net)
+          files: |
+            dist/networking-toolbox-${{ github.ref_name }}.tar.gz
+            dist/networking-toolbox-${{ github.ref_name }}.zip
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha') }}
+          generate_release_notes: false

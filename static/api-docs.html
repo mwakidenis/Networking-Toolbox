@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="REST API documentation for Networking Toolbox - Free IP address calculators, subnet tools, and network utilities">
+  <meta name="theme-color" content="#e3ed70">
+  <title>API Docs - Networking Toolbox</title>
+  <link rel="icon" href="/favicon.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
+  <style>
+    :root {
+      --bg-primary: #0d1117;
+      --bg-secondary: #161b22;
+      --bg-tertiary: #21262d;
+      --text-primary: #c9d1d9;
+      --text-secondary: #7d8590;
+      --color-primary: #e3ed70;
+      --border: #30363d;
+    }
+    body {
+      margin: 0;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: 'Roboto Mono', monospace;
+    }
+    /* Header & Info */
+    .swagger-ui .info h1,
+    .swagger-ui .info .title,
+    .swagger-ui .description h2,
+    .swagger-ui h3
+    .swagger-ui .info .title {
+      color: var(--color-primary);
+      font-family: 'Roboto Mono', monospace;
+    }
+    .swagger-ui .info {
+      margin-bottom: 2rem;
+    }
+    .swagger-ui .info .description p,
+    .swagger-ui .info .description,
+    .swagger-ui .description {
+      color: var(--text-primary);
+    }
+    .swagger-ui .info a {
+      color: var(--color-primary);
+    }
+    /* Sections */
+    .swagger-ui .opblock-tag {
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--border);
+    }
+    .swagger-ui .opblock-tag:hover {
+      background: var(--bg-secondary);
+    }
+    /* Operations */
+    .swagger-ui .opblock {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+    }
+    .swagger-ui .opblock .opblock-summary {
+      border: 1px solid var(--border);
+      background: var(--bg-tertiary);
+    }
+    .swagger-ui .opblock .opblock-summary:hover {
+      background: var(--bg-secondary);
+    }
+    .swagger-ui .opblock.opblock-get .opblock-summary {
+      border-color: #50fa7b;
+    }
+    .swagger-ui .opblock.opblock-post .opblock-summary {
+      border-color: #8be9fd;
+    }
+    /* Text & Labels */
+    .swagger-ui .opblock .opblock-summary-path,
+    .swagger-ui .opblock .opblock-summary-description,
+    .swagger-ui .opblock-description-wrapper p,
+    .swagger-ui .opblock-body pre,
+    .swagger-ui .parameter__name,
+    .swagger-ui .parameter__type,
+    .swagger-ui .response-col_status,
+    .swagger-ui .response-col_description,
+    .swagger-ui .description,
+    .swagger-ui .description p,
+    .swagger-ui .description ul,
+    .swagger-ui .description ul li,
+    .swagger-ui .parameter__description,
+    .swagger-ui .response-col_description__inner p {
+      color: var(--text-primary);
+    }
+    .swagger-ui .opblock .opblock-summary-method {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-weight: bold;
+    }
+    .swagger-ui .opblock.opblock-get .opblock-summary-method {
+      background: #50fa7b;
+      color: var(--bg-primary);
+    }
+    .swagger-ui .opblock.opblock-post .opblock-summary-method {
+      background: #8be9fd;
+      color: var(--bg-primary);
+    }
+    /* Parameters */
+    .swagger-ui .parameters-col_description input[type=text],
+    .swagger-ui .parameters-col_description textarea {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+    .swagger-ui .parameters-col_description input[type=text]:focus,
+    .swagger-ui .parameters-col_description textarea:focus {
+      border-color: var(--color-primary);
+      outline: none;
+    }
+    /* Buttons */
+    .swagger-ui .btn {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+    .swagger-ui .btn:hover {
+      background: var(--bg-secondary);
+    }
+    .swagger-ui .btn.execute {
+      background: var(--color-primary);
+      color: var(--bg-primary);
+      border: none;
+    }
+    .swagger-ui .btn.execute:hover {
+      filter: brightness(1.1);
+    }
+    /* Response */
+    .swagger-ui .responses-inner {
+      background: var(--bg-primary);
+    }
+    .swagger-ui .response .response-col_status {
+      color: var(--color-primary);
+    }
+    .swagger-ui pre.microlight,
+    .swagger-ui .highlight-code {
+      background: var(--bg-primary) !important;
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+    /* Models */
+    .swagger-ui .model-container {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+    }
+    .swagger-ui .model {
+      color: var(--text-primary);
+    }
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-primary);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-secondary);
+    }
+    /* Top bar */
+    .swagger-ui .topbar {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 0;
+    }
+    .swagger-ui .topbar .download-url-wrapper {
+      display: none;
+    }
+    /* Scheme container */
+    .swagger-ui .scheme-container {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      box-shadow: none;
+    }
+    /* Filter input */
+    .swagger-ui .operation-filter-input {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+    /* Section headers */
+    .swagger-ui .opblock-section-header {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      box-shadow: none;
+      border-bottom: 1px solid var(--border);
+    }
+    .swagger-ui .opblock-section-header h4 {
+      color: var(--text-primary);
+    }
+    /* Body param text */
+    .swagger-ui .body-param__text {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+    .swagger-ui .body-param__text:focus {
+      border-color: var(--color-primary);
+      outline: none;
+    }
+    /* Additional select and input fixes */
+    .swagger-ui select,
+    .swagger-ui input[type=text],
+    .swagger-ui input[type=password],
+    .swagger-ui input[type=search],
+    .swagger-ui input[type=email],
+    .swagger-ui input[type=file],
+    .swagger-ui textarea {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+    .swagger-ui select:focus,
+    .swagger-ui input[type=text]:focus,
+    .swagger-ui input[type=password]:focus,
+    .swagger-ui input[type=search]:focus,
+    .swagger-ui input[type=email]:focus,
+    .swagger-ui textarea:focus {
+      border-color: var(--color-primary);
+      outline: none;
+      box-shadow: 0 0 0 1px var(--color-primary);
+    }
+    /* Table headers */
+    .swagger-ui table thead tr th,
+    .swagger-ui table thead tr td {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border-color: var(--border);
+    }
+    /* Response tabs */
+    .swagger-ui .tab li {
+      color: var(--text-secondary);
+    }
+    .swagger-ui .tab li.active {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+  </style>
+</head>
+<body>
+  <div id="swagger"></div>
+  <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+  <script>
+    SwaggerUIBundle({
+      url: "https://raw.githubusercontent.com/Lissy93/networking-toolbox/refs/heads/main/swagger.yaml",
+      dom_id: "#swagger",
+      deepLinking: true,
+      presets: [SwaggerUIBundle.presets.apis],
+      layout: "BaseLayout",
+      defaultModelsExpandDepth: 0,
+      defaultModelExpandDepth: 0,
+      docExpansion: "list",
+      filter: true,
+      showExtensions: true,
+      showCommonExtensions: true,
+      tryItOutEnabled: true,
+      displayRequestDuration: true,
+      persistAuthorization: true,
+      validatorUrl: null
+    });
+  </script>
+</body>
+</html>

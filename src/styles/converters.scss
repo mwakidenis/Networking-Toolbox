@@ -1,0 +1,245 @@
+/* Converter and Reference Component Styles */
+
+/* Converter section styles */
+.converter-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-lg);
+  margin: var(--spacing-lg) 0;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+}
+
+.input-group,
+.output-group {
+  flex: 1;
+  // max-width: 300px;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.conversion-arrow {
+  color: var(--color-primary);
+  flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    transform: rotate(90deg);
+  }
+}
+
+.input-prefix {
+  position: absolute;
+  left: var(--spacing-sm);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.input-number {
+  padding-left: 2rem !important;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-lg);
+  text-align: center;
+}
+
+.input-mask {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-lg);
+  padding-right: 2.5rem;
+
+  &.valid {
+    border-color: var(--color-success);
+  }
+
+  &.invalid {
+    border-color: var(--color-error);
+  }
+}
+
+.input-result {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-lg);
+  background-color: var(--bg-tertiary);
+  border-color: var(--border-secondary);
+  color: var(--color-success);
+  font-weight: 600;
+  text-align: center;
+
+  &[type='text'] {
+    padding-right: 4rem;
+  }
+}
+
+/* Preset styles */
+.presets-section {
+  margin: var(--spacing-lg) 0;
+
+  h3 {
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .presets-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+  }
+
+  /* Preset button styles moved to base.scss for reuse */
+}
+
+/* Reference component styles */
+.reference-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin: var(--spacing-lg) 0;
+}
+
+.card-header-inline {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-sm);
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+}
+
+.class-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.class-badge {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--bg-primary);
+
+  &.a {
+    background-color: var(--color-info);
+  }
+  &.b {
+    background-color: var(--color-success);
+  }
+  &.c {
+    background-color: var(--color-warning);
+  }
+}
+
+.class-details {
+  h3 {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+  }
+}
+
+.mask-info {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.range-badge {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  background-color: var(--bg-tertiary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+}
+
+.range-info {
+  h3 {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+  }
+}
+
+.range-description {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.rfc-badge {
+  font-size: var(--font-size-xs);
+  color: var(--color-info-light);
+  background-color: rgba(9, 105, 218, 0.1);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+}
+
+.private-notice {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background-color: rgba(35, 134, 54, 0.1);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-success-light);
+}
+
+/* Tips and explanatory sections */
+.tips-section {
+  margin-top: var(--spacing-xl);
+  padding: var(--spacing-md);
+  background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-secondary);
+
+  .tips-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .tips-content {
+    p {
+      color: var(--text-primary);
+      margin: 0;
+    }
+  }
+
+  .tips-list {
+    list-style: none;
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+/* Table styles moved to CommonSubnetsReference component where they're used */
+
+/* Additional styles for missing elements */
+.class-description {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.usage-info {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}

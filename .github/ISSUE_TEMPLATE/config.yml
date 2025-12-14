@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: ⚠️ Report a security vulnerability
+    url: https://github.com/lissy93/networking-toolbox/security/policy
+    about: Please do NOT open a public issue for unresolved security problems.
+  - name: 💬 Questions / Support / How-to
+    url: https://github.com/lissy93/networking-toolbox/discussions
+    about: Ask usage questions or get help in Discussions.
+  - name: 📚 Documentation and About
+    url: https://networking-toolbox.as93.net/about
+    about: View project info, roadmap, and documentation.

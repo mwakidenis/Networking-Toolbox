@@ -1,0 +1,4 @@
+Built and hosted by Alicia Sykes <alicia@as93.net> https://github.com/lissy93
+And contributors:  https://github.com/lissy93/networking-toolkit/contributors
+Kindly supported by our awesome sponsors: https://github.com/sponsors/lissy93
+Distributed under MIT license:  https://github.com/lissy93/networking-toolkit

@@ -1,0 +1,73 @@
+codecov:
+  require_ci_to_pass: no
+  notify:
+    wait_for_ci: no
+
+coverage:
+  precision: 2
+  round: down
+  range: "50...100"
+
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 5%
+        informational: true
+        if_ci_failed: success
+    patch:
+      default:
+        target: 50%
+        threshold: 10%
+        informational: true
+        if_ci_failed: success
+
+component_management:
+  individual_components:
+    - component_id: api
+      name: API Routes
+      paths:
+        - src/routes/api/**/*
+
+    - component_id: frontend
+      name: Frontend
+      paths:
+        - src/routes/**/*.svelte
+        - src/lib/components/**
+        - src/styles/**
+
+    - component_id: utils
+      name: Utilities
+      paths:
+        - src/lib/utils/**
+
+ignore:
+  - "tests/**/*"
+  - ".svelte-kit/**/*"
+  - "build/**/*"
+  - "playwright-report/**/*"
+  - "coverage/**/*"
+  - "**/*.config.ts"
+  - "**/*.config.js"
+  - "src/app.html"
+  - "**/*.d.ts"
+  - "static/**/*"
+  - ".github/**/*"
+
+comment: false
+
+flags:
+  unittests:
+    carryforward: true
+    carryforward_mode: all
+
+  api-tests:
+    carryforward: true
+    carryforward_mode: all
+
+  e2e-tests:
+    carryforward: true
+    carryforward_mode: all
+
+github_checks:
+  annotations: true

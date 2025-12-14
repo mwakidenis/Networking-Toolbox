@@ -1,0 +1,147 @@
+name: 🪢 Checks
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: 🔨 Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build-check
+
+  lint:
+    name: 🧼 Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+
+  format:
+    name: 💅 Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prettier --check src || (echo "⚠️ Formatting issues found" && exit 1)
+
+  types:
+    name: 🧩 Types
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run types
+
+  svelte_check:
+    name: 🛟 Svelte Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+
+  test:
+    name: 🧪 Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  deps:
+    name: 🔒 Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm audit --audit-level=high
+      - run: npm ls --all
+
+  summarize:
+    name: 📊 Summary
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - build
+      - lint
+      - format
+      - types
+      - svelte_check
+      - test
+      - deps
+    steps:
+      - name: Create summary
+        env:
+          BUILD: ${{ needs.build.result }}
+          LINT: ${{ needs.lint.result }}
+          FORMAT: ${{ needs.format.result }}
+          TYPES: ${{ needs.types.result }}
+          SVCHK: ${{ needs.svelte_check.result }}
+          TEST: ${{ needs.test.result }}
+          DEPS: ${{ needs.deps.result }}
+        run: |
+          em() { case "$1" in success) echo "✅";; failure) echo "❌";; cancelled|skipped) echo "⏭️";; *) echo "❔";; esac; }
+          line() { r="$1"; n="$2"; cmd="$3"; s="Passing"; [ "$r" != "success" ] && s="**Failing** - run \`$cmd\`"; echo "- $(em "$r") $n: $s"; }
+
+          {
+            echo "## Check Summary"
+            line "$BUILD" "Build" "npm run build"
+            line "$LINT" "Lint" "npm run lint"
+            line "$FORMAT" "Format" "npm run format"
+            line "$TYPES" "Types" "npm run types"
+            line "$SVCHK" "Svelte Check" "npm run check"
+            line "$TEST" "Tests" "npm test"
+            line "$DEPS" "Dependencies" "npm audit --audit-level=high"
+
+            # Count failures properly
+            failures=0
+            [ "$BUILD" = "failure" ] && failures=$((failures + 1))
+            [ "$LINT" = "failure" ] && failures=$((failures + 1))
+            [ "$FORMAT" = "failure" ] && failures=$((failures + 1))
+            [ "$TYPES" = "failure" ] && failures=$((failures + 1))
+            [ "$SVCHK" = "failure" ] && failures=$((failures + 1))
+            [ "$TEST" = "failure" ] && failures=$((failures + 1))
+            [ "$DEPS" = "failure" ] && failures=$((failures + 1))
+
+            if [ "$failures" -eq 0 ]; then
+              echo -e "\n🎉 **All checks passed!**"
+            else
+              echo -e "\n⚠️ **$failures check(s) failed** - please fix the issues above before merging."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,25 @@
+name: 💬 Question / Feedback
+description: Ask questions or provide general feedback
+title: "[Question]: "
+labels: ["question", "feedback"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for your question or feedback! We appreciate your input.
+
+  - type: textarea
+    id: question-feedback
+    attributes:
+      label: Question or Feedback
+      description: |
+        Please provide your question or feedback in detail.
+        - For questions: Be specific about what you're trying to achieve
+        - For feedback: Let us know what you liked or what could be improved
+        - For feature requests: Describe what functionality you'd like to see
+      placeholder: |
+        Your question or feedback here...
+    validations:
+      required: true

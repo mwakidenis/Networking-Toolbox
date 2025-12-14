@@ -1,0 +1,303 @@
+name: 🧪 Run Tests
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write  # For OIDC with Codecov
+
+env:
+  IS_PR: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: "--max_old_space_size=8192"
+      ENABLE_CODECOV: ${{ secrets.CODECOV_TOKEN != '' }}
+      ENABLE_CODACY: ${{ secrets.CODACY_TOKEN != '' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Run unit tests
+        id: test
+        run: |
+          npx vitest run \
+            --coverage \
+            --reporter=github-actions \
+            --reporter=verbose \
+            --reporter=junit \
+            --outputFile=test-results.xml
+        continue-on-error: true
+
+      - name: Save test result
+        if: always()
+        run: echo "${{ steps.test.outcome }}" > test-result-unit.txt
+
+      - name: Upload test result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-result-unit
+          path: test-result-unit.txt
+
+      - name: Upload test results XML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: test-results.xml
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() && env.ENABLE_CODECOV == 'true' }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: test-results.xml
+          flags: unittests
+          name: unit-tests
+        continue-on-error: true
+
+      - name: Upload coverage to Codecov
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || env.IS_PR == 'true'
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: networking-toolbox
+          fail_ci_if_error: false
+        continue-on-error: true
+
+      - name: Upload coverage to Codacy
+        if: ${{ !cancelled() && env.ENABLE_CODACY == 'true' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || env.IS_PR == 'true') }}
+        env:
+          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_TOKEN }}
+        run: |
+          # Fetch Codacy Coverage Reporter and upload lcov
+          curl -Ls https://coverage.codacy.com/get.sh | bash -s -- report -l javascript -r coverage/lcov.info
+        continue-on-error: true
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage
+
+      - name: Fail if tests failed
+        if: steps.test.outcome == 'failure'
+        run: exit 1
+
+  api-tests:
+    name: API Contract Tests
+    runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: "--max_old_space_size=8192"
+      ENABLE_CODECOV: ${{ secrets.CODECOV_TOKEN != '' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Start development server
+        run: npm run dev -- --port 4175 &
+
+      - name: Wait for server
+        run: |
+          timeout 30 bash -c 'until curl -f http://localhost:4175/api >/dev/null 2>&1; do sleep 1; done'
+
+      - name: Run API contract tests
+        id: test
+        run: |
+          npm run test:api -- \
+            --reporter=github-actions \
+            --reporter=verbose \
+            --reporter=junit \
+            --outputFile=api-test-results.xml
+        continue-on-error: true
+
+      - name: Save test result
+        if: always()
+        run: echo "${{ steps.test.outcome }}" > test-result-api.txt
+
+      - name: Upload test result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-result-api
+          path: test-result-api.txt
+
+      - name: Upload test results XML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-test-results
+          path: api-test-results.xml
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() && env.ENABLE_CODECOV == 'true' }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: api-test-results.xml
+          flags: api-tests
+          name: api-contract-tests
+        continue-on-error: true
+
+      - name: Fail if tests failed
+        if: steps.test.outcome == 'failure'
+        run: exit 1
+
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: "--max_old_space_size=8192"
+      ENABLE_CODECOV: ${{ secrets.CODECOV_TOKEN != '' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Get Playwright version
+        id: playwright-version
+        run: echo "version=$(npx playwright --version | awk '{print $2}')" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-chromium-firefox-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Install Playwright
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium firefox
+
+      - name: Install Playwright deps only
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium firefox
+
+      - name: Run e2e tests
+        id: test
+        run: npx playwright test
+        continue-on-error: true
+
+      - name: Save test result
+        if: always()
+        run: echo "${{ steps.test.outcome }}" > test-result-e2e.txt
+
+      - name: Upload test result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-result-e2e
+          path: test-result-e2e.txt
+
+      - name: Upload test results XML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results
+          path: e2e-results.xml
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() && env.ENABLE_CODECOV == 'true' }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: e2e-results.xml
+          flags: e2e-tests
+          name: e2e-tests
+        continue-on-error: true
+
+      - name: Upload e2e artifacts
+        if: always() && steps.test.outcome != 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report
+            test-results
+
+      - name: Fail if tests failed
+        if: steps.test.outcome == 'failure'
+        run: exit 1
+
+  summary:
+    name: Summary
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [unit-tests, api-tests, e2e-tests]
+    steps:
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-result-*
+          merge-multiple: true
+
+      - name: Write summary
+        env:
+          UNIT_JOB: ${{ needs.unit-tests.result }}
+          API_JOB: ${{ needs.api-tests.result }}
+          E2E_JOB: ${{ needs.e2e-tests.result }}
+        run: |
+          # Read actual test results from artifacts (or use job result as fallback)
+          UNIT=$(cat test-result-unit.txt 2>/dev/null || echo "$UNIT_JOB")
+          API=$(cat test-result-api.txt 2>/dev/null || echo "$API_JOB")
+          E2E=$(cat test-result-e2e.txt 2>/dev/null || echo "$E2E_JOB")
+
+          # Helper functions
+          em() { case "$1" in success) echo "✅";; failure) echo "❌";; cancelled|skipped) echo "⏭️";; *) echo "❔";; esac; }
+          line() { r="$1"; n="$2"; cmd="$3"; s="Passing"; [ "$r" = "failure" ] && s="**Failing** - run \`$cmd\`"; [ "$r" = "skipped" ] && s="Skipped"; echo "- $(em "$r") $n: $s"; }
+
+          # Count failures
+          failures=0
+          [ "$UNIT" = "failure" ] && failures=$((failures + 1))
+          [ "$API" = "failure" ] && failures=$((failures + 1))
+          [ "$E2E" = "failure" ] && failures=$((failures + 1))
+
+          {
+            echo "## 🧪 Test Results"
+            echo ""
+            line "$UNIT" "Unit Tests" "npm run test:coverage"
+            line "$API" "API Contract Tests" "npm run test:api"
+            line "$E2E" "E2E Tests" "npm run test:e2e"
+
+            if [ "$failures" -eq 0 ]; then
+              echo -e "\n🎉 **All test suites passed!**"
+              [ "$UNIT" = "success" ] && echo "📈 Coverage report may be available in [Codecov](https://codecov.io)"
+            else
+              echo -e "\n⚠️ **$failures test suite(s) failed**"
+            fi
+
+            echo -e "\n💡 Detailed test reports will be posted by the Report Tests workflow"
+
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,87 @@
+# Mirrors the repository to an alternate (non-Microsoft!) Git hosting service
+
+# The following options can be specified as env vars/secrets:
+# - MIRROR_SSH:  (REQUIRED) SSH private key with write access to target repo
+# - MIRROR_HOST: (optional) Hostname of target Git server, defaults to Codeberg
+# - MIRROR_USER: (optional) User or org name of target repo, defaults to alicia
+# - MIRROR_REPO: (optional) Name of target repo, defaults to same as source repo
+#
+# The workflow is triggered:
+#  1. weekly (at 01:30 on Sunday mornings) via a cron
+#  2. Whenever a new tagged version is published to git
+#  4. Or, can be triggered manually via the "Run workflow" button
+
+name: 🪞 Mirror to Codeberg
+
+on:
+  schedule:
+    - cron: '30 01 * * 0'
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+    inputs:
+      host: { description: 'Git host (default: git@codeberg.org)' }
+      user: { description: 'Git user/org name (default: current repo owner)' }
+      repo: { description: 'Repository name (default: current repo name)' }
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    env: # Get values for target repo from inputs, env vars, or fallback to defaults
+      MIRROR_HOST: ${{ inputs.host || vars.MIRROR_HOST || 'git@codeberg.org' }}
+      MIRROR_USER: ${{ inputs.user || vars.MIRROR_USER || 'alicia' }}
+      MIRROR_REPO: ${{ inputs.repo || vars.MIRROR_REPO || github.event.repository.name }}
+      HAS_SSH: ${{ secrets.MIRROR_SSH != '' }}
+    steps:
+      - name: ⏭️ Cancel if SSH key not set
+        if: env.HAS_SSH != 'true'
+        run: echo "::warning::MIRROR_SSH secret not set" && exit 1
+        
+      - name: ⤵️ Checkout source repository
+        uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+          
+      - name: 🔁 Mirror repository to target
+        id: mirror
+        run: |
+          set -euo pipefail
+          LOG="$RUNNER_TEMP/mirror.log"
+
+          # Derive host from MIRROR_HOST (handles git@host, ssh://git@host:22, etc.)
+          HOST="${{ env.MIRROR_HOST }}"
+          HOST="${HOST#*://}"; HOST="${HOST#*@}"; HOST="${HOST%%:*}"
+
+          mkdir -p ~/.ssh
+          echo "${{ secrets.MIRROR_SSH }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan "$HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          {
+            git remote add mirror ${{ env.MIRROR_HOST }}:${{ env.MIRROR_USER }}/${{ env.MIRROR_REPO }}.git || true
+            git push mirror --all
+            git push mirror --tags
+          } |& tee "$LOG"
+
+      - name: ⤵️ Summarize
+        if: always()
+        continue-on-error: true
+        run: |
+          LOG="$RUNNER_TEMP/mirror.log"
+          TARGET="${{ env.MIRROR_HOST }}:${{ env.MIRROR_USER }}/${{ env.MIRROR_REPO }}.git"
+          if [ "${{ env.HAS_SSH }}" != "true" ]; then
+            {
+              echo "🚫 **Cancelled, because no SSH key was set**.<br>"
+              echo "_Looks like you forgot to set the \`MIRROR_SSH\` secret to your encrypted private key?_"
+            } >> "$GITHUB_STEP_SUMMARY"; exit 0
+          fi
+          if [ "${{ steps.mirror.outcome }}" = "success" ]; then
+            {
+              echo "✅ **Completed**.<br>_You can now access the repository at_ \`${TARGET}\` 🥳<br>"
+              echo; echo '<details><summary>Output</summary><pre>'; (tail -n 200 "$LOG" || true); echo '</pre></details>'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "❌ **Failed**.<br>_Because the mirror push did not complete successfully._"
+              echo; echo '```'; ([ -f "$LOG" ] && tail -n 200 "$LOG" || echo "No log output captured."); echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
