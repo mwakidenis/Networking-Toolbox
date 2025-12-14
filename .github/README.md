@@ -134,7 +134,7 @@ If you're new to GitHub or open source, take a look at [git-in.to](https://git-i
 
 <!-- License + Copyright -->
 <p  align="center">
-  <i>© <a href="https://https://mwakidenis.github.io/mwakidenis/">Mwakidenis</a> 2025</i><br>
+  <i>© <a href="https://https://mwakidenis.github.io/mwakidenis/">mwakidenis</a> 2025</i><br>
   <i>Licensed under <a href="https://gist.github.com/mwakidenis/143d2ee01ccc5c052a17">MIT</a></i><br>
   <a href="https://github.com/mwakidenis"><img src="https://i.ibb.co/4KtpYxb/octocat-clean-mini.png" /></a><br>
   <sup>Thanks for visiting :)</sup>
