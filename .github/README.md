@@ -15,7 +15,7 @@
 ### Deploying
 
 #### Option 1 - Docker
-Run `docker run -p 3000:3000 lissy93/networking-toolbox`<br>
+Run `docker run -p 3000:3000 mwakidenis/networking-toolbox`<br>
 Or, use our example [`docker-compose.yml`](https://github.com/mwakidenis/networking-toolbox/blob/main/docker-compose.yml)
 
 #### Option 2 - Cloud
@@ -134,7 +134,7 @@ If you're new to GitHub or open source, take a look at [git-in.to](https://git-i
 
 <!-- License + Copyright -->
 <p  align="center">
-  <i>© <a href="https://aliciasykes.com">Alicia Sykes</a> 2025</i><br>
+  <i>© <a href="https://https://mwakidenis.github.io/mwakidenis/">Mwakidenis</a> 2025</i><br>
   <i>Licensed under <a href="https://gist.github.com/mwakidenis/143d2ee01ccc5c052a17">MIT</a></i><br>
   <a href="https://github.com/mwakidenis"><img src="https://i.ibb.co/4KtpYxb/octocat-clean-mini.png" /></a><br>
   <sup>Thanks for visiting :)</sup>
